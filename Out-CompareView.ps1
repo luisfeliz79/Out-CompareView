@@ -20,7 +20,9 @@ Param(
    [String]$TitleProperty,
    [string]$ExportCSVFile,
    [string]$ExportCliXMLFile,
-   [switch]$ReturnObject
+   [switch]$ReturnObject,
+   [Array]$ExcludeProperty,
+   [Array]$IncludeProperty
 )
 
 Begin {
@@ -37,13 +39,40 @@ Process {
 
     if (-not $Props) {
         # Get all the Properties and NoteProperties for the first object   
-        $Props=($Objects | get-member | where MemberType -match "Property|NoteProperty").Name
-        if ($props.count -lt 1) { Write-Error "The objects have no Properties or NoteProperties";break }
+        [System.Collections.ArrayList]$Props=($Objects | get-member | where MemberType -match "Property").Name
+
+        $ExcludeProperty | ForEach-Object {
+
+              if ($Props -contains $_) {
+
+                    $SpecifiedAttrib=$_
+                    $AttribCorrectCase=($Props | where {$_ -eq $SpecifiedAttrib})
+                #Remove using this method, To deal with case sensitivity
+                
+                $Props.Remove($AttribCorrectCase)
+                Write-Verbose -Message "Removing attribute $AttribCorrectCase as requested"
+                
+              
+              }
+
+        }
+
+        if ($IncludeProperty) { 
+        
+            $Props=$IncludeProperty
+                Write-Verbose -Message "Only using these Attributes: $($IncludeProperty -join ", ")"
+        
+        
+        }
+
+        
+
+        if ($props.count -lt 1) { Write-Error "The objects have no *Properties ";break }
 
         if (-not $TitleProperty) {
 
         #No Title Property specified, so lets pick one from the list of $props
-        $DefaultTitlesToTry="ObjectID","ID","Name","DisplayName","UserPrincipalName","email","UPN","ImmutableID"
+        $DefaultTitlesToTry="ObjectID","ID","Name","DisplayName","UserPrincipalName","email","UPN","ImmutableID","Subject"
 
             ForEach ($title in $DefaultTitlesToTry) {
 
@@ -62,7 +91,7 @@ Process {
 
         #However, if the user did specify a title property, lets make sure it is in the list of $props
         if ($Props -notcontains $TitleProperty) { 
-            Write-error "The Property $TitleProperty is not found on this object. Try specifying one of these : $Props";break }
+            Write-error "The Property $TitleProperty is not found on this object. Try specifying one of these : $Props";exit }
         }
 
 
@@ -76,7 +105,7 @@ Process {
 End {
 
     #For each property, and each object, add a row with the values
-    $Props | % {
+    $Props | ForEach-Object {
 
     $Prop=$_
     $Rows=@()
@@ -85,7 +114,7 @@ End {
     $Rows=([ordered]@{"Attributes"=$Prop})
 
     #for each object, add a row to $rows 
-    $AllObjects | % {
+    $AllObjects | ForEach-Object {
     
         $Rows.add($_.$TitleProperty, ($_.$Prop -join ", ").trim())
           
@@ -100,12 +129,15 @@ End {
     if ($ExportCSVFile) {
     
         $items | export-CSV $ExportCSVFile -NoTypeInformation
+        Write-Verbose "Wrote $ExportCSVFile"
         break
     }
 
     if ($ExportCliXMLFile) {
     
         $items | Export-Clixml $ExportCliXMLFile
+        Write-Verbose "Wrote $ExportCliXMLFile"
+
         break
     }
 
