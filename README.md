@@ -23,10 +23,6 @@
 
      Get-AzureADUser -Searchstring "Luis" | Out-CompareView -TitleProperty UserPrincipalName
 
-
-### Get All AzureAD Users with the name Luis and compare all attributes on  a gridview, using UserPrincipalName as the title header
-
-     Get-AzureADUser -Searchstring "Luis" | Out-CompareView -TitleProperty UserPrincipalName
    
    
  ### Get Certificates with subject matching Digicert and compare on a gridview, Exclude the RawData Attribute
