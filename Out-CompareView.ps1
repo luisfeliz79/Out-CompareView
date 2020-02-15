@@ -1,21 +1,26 @@
 ﻿######################################################
 # Out-CompareView
 #
-# Compare objects side by side
-# By Luis Feliz (lufeliz@microsoft.com)
+# Compare objects in an array side by side
+# By Luis Feliz (lufeliz_micro_soft_com)
 #
 # $Objects | Out-CompareView
-#                -TitleProperty to specify a particular property to use as title
-#                -GridView - use the Out-GridView control to show results
+#                -TitleProperty to specify a particular property to use as title (must be unique values)
+#                -ExportCSVFile <filename> to output to a CSV file
+#                -ExportCliXML <filename> to output the object to a CLI XML file
+#                
+#                Default is to output to a GridView
 #
-######################################################
+########################################################################################################
 function Out-CompareView  {
 [CmdletBinding()]
 
 Param(
    [Parameter(ValueFromPipeline)]$objects,
    [String]$TitleProperty,
-   [Switch]$GridView
+   [string]$ExportCSVFile,
+   [string]$ExportCliXMLFile,
+   [switch]$ReturnObject
 )
 
 Begin {
@@ -82,7 +87,7 @@ End {
     #for each object, add a row to $rows 
     $AllObjects | % {
     
-        $Rows.add($_.$TitleProperty, $_.$Prop)
+        $Rows.add($_.$TitleProperty, ($_.$Prop -join ", ").trim())
           
     }
     
@@ -91,15 +96,29 @@ End {
 
 }
     #Finally make the data available
-    if ($GridView) {
-        $items | Out-GridView
-    } else {
-        $items
+
+    if ($ExportCSVFile) {
+    
+        $items | export-CSV $ExportCSVFile -NoTypeInformation
+        break
     }
+
+    if ($ExportCliXMLFile) {
+    
+        $items | Export-Clixml $ExportCliXMLFile
+        break
+    }
+
+    if ($ReturnObject) {
+
+        return $Items
+        break
+    }
+
+    $Items | Out-GridView
 
 }
 
 
 
 } #endfunction
-
