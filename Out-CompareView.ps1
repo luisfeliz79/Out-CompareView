@@ -97,6 +97,8 @@ Process {
 
     #We need to get all the objects first, so $AllObjects will hold them
     $AllObjects+=$objects
+
+    write-verbose "Adding Object: $($objects.$TitleProperty)"
     
   
 
@@ -116,8 +118,14 @@ End {
     #for each object, add a row to $rows 
     $AllObjects | ForEach-Object {
     
-        $Rows.add($_.$TitleProperty, ($_.$Prop -join ", ").trim())
-          
+    Try {
+        $Entry=$_
+        $Rows.add($_.$TitleProperty, ($_.$Prop -join ", ").trim()) 
+    }
+    catch {
+        Write-warning "Error Adding $($entry.$TitleProperty) - $($Entry.$Prop), this may be due to duplicate entries"
+        #Nothing to do, just keep going
+    }      
     }
     
     #Then add Powershell object for each property
